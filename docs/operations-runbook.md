@@ -1,4 +1,4 @@
-# On-call and release runbook (abridged)
+# On-call and release runbook
 
 ## Deployment and promotion
 

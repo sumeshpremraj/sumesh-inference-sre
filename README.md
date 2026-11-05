@@ -110,7 +110,7 @@ Each request gets a trace ID and spans for Gateway/routing/model execution (wher
 
 ## 9. References
 
-Official docs used to verify the mechanics:
+Official references used:
 
 - Kubernetes Gateway API traffic splitting: https://gateway-api.sigs.k8s.io/guides/user-guides/traffic-splitting/
 - Kubernetes Gateway API request rewrites (controller support varies): https://gateway-api.sigs.k8s.io/guides/user-guides/http-redirect-rewrite/
