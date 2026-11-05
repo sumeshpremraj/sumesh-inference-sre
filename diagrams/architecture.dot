@@ -1,0 +1,36 @@
+digraph Architecture {
+  graph [rankdir=LR, bgcolor="white", pad=0.22, nodesep=0.35, ranksep=0.6, fontname="DejaVu Sans", fontsize=13, splines=polyline];
+  node [shape=box, style="rounded,filled", color="#CBD5E1", fillcolor="#F8FAFC", fontname="DejaVu Sans", fontsize=11, margin="0.15,0.10"];
+  edge [color="#64748B", arrowsize=0.7, fontname="DejaVu Sans", fontsize=9];
+  client [label="Clients\nHTTPS prediction APIs", fillcolor="#DBEAFE"];
+  gateway [label="Load balancer + WAF\nGateway API / HTTPRoute", fillcolor="#BFDBFE"];
+  client -> gateway;
+  subgraph cluster_fraud {
+    label="Fraud model (versions coexist)"; style="rounded,filled"; color="#A7F3D0"; fillcolor="#F0FDF4"; fontname="DejaVu Sans";
+    fv1svc [label="Service\nfraud-v1", fillcolor="#DCFCE7"];
+    fv1pod [label="Deployment\nfraud-v1\n2..N pods", fillcolor="#FFFFFF"];
+    fv2svc [label="Service\nfraud-v2", fillcolor="#DCFCE7"];
+    fv2pod [label="Deployment\nfraud-v2\n2..N pods", fillcolor="#FFFFFF"];
+    fv1svc -> fv1pod; fv2svc -> fv2pod;
+  }
+  subgraph cluster_reco {
+    label="Other model"; style="rounded,filled"; color="#FDE68A"; fillcolor="#FFFBEB"; fontname="DejaVu Sans";
+    rsvc [label="Service\nrecommendation-v3", fillcolor="#FEF3C7"];
+    rpod [label="Deployment\nrecommendation-v3", fillcolor="#FFFFFF"];
+    rsvc -> rpod;
+  }
+  gateway -> fv1svc [label="fraud: 95%"];
+  gateway -> fv2svc [label="fraud: 5%"];
+  gateway -> rsvc [label="recommendations"];
+  scaler [label="KEDA -> separate HPA\nper model + version", fillcolor="#EDE9FE"];
+  nodes [label="CPU / GPU node pools\nnode autoscaler", fillcolor="#EDE9FE"];
+  metrics [label="Metrics + traces + logs\nSLOs / alerts", fillcolor="#FCE7F3"];
+  gitops [label="GitOps (Argo CD)\nimmutable image digests", fillcolor="#FCE7F3"];
+  {rank=same; scaler; nodes; metrics; gitops;}
+  scaler -> fv1pod [style=dashed, color="#7C3AED"];
+  scaler -> fv2pod [style=dashed, color="#7C3AED"];
+  scaler -> rpod [style=dashed, color="#7C3AED"];
+  nodes -> fv2pod [style=dotted, color="#7C3AED"];
+  metrics -> gateway [style=dotted, constraint=false, color="#DB2777"];
+  gitops -> gateway [style=dotted, constraint=false, color="#DB2777"];
+}

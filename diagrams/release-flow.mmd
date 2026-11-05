@@ -1,0 +1,9 @@
+flowchart LR
+    A[ML image by digest] --> B[CI checks: scan, contract, load test]
+    B --> C[Git PR / Argo CD: deploy v2 at 0%]
+    C --> D[Warm, probe, explicit-version smoke]
+    D --> E[Git-managed weights: 1 / 5 / 25 / 50 / 100%]
+    E --> F{SLO and quality gates pass?}
+    F -->|Yes| G[Promote v2; retain warm v1]
+    F -->|No| H[Git revert route to 100% v1]
+    G --> I[Retire v1 after rollback window]

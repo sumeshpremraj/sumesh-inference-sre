@@ -1,0 +1,76 @@
+# v2 may have a different resource profile, HPA target, and max replica limit.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-v2
+  namespace: inference
+  labels: {app: fraud, version: v2}
+spec:
+  # Intentionally NO spec.replicas: KEDA/HPA owns replica count.
+  selector:
+    matchLabels: {app: fraud, version: v2}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: fraud, version: v2}
+    spec:
+      terminationGracePeriodSeconds: 45
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: fraud, version: v2}
+      containers:
+        - name: model
+          image: registry.example.com/models/fraud@sha256:2222222222222222222222222222222222222222222222222222222222222222
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8080}]
+          resources:
+            requests: {cpu: 1000m, memory: 2Gi}
+            limits: {cpu: "3", memory: 3Gi}
+          startupProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: fraud-v2-svc, namespace: inference}
+spec:
+  selector: {app: fraud, version: v2}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata: {name: fraud-v2-scale, namespace: inference}
+spec:
+  scaleTargetRef: {name: fraud-v2}
+  pollingInterval: 15
+  minReplicaCount: 2 # warm canary, even at 0% default traffic
+  maxReplicaCount: 30
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown: {stabilizationWindowSeconds: 300}
+  triggers:
+    - type: prometheus
+      metricType: AverageValue
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        query: 'sum(rate(inference_routed_requests_total{model="fraud",version="v2"}[2m])) or vector(0)'
+        threshold: "12" # v2 example: heavier model than v1

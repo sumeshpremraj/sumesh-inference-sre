@@ -1,0 +1,15 @@
+digraph Release {
+ graph [rankdir=TB, bgcolor="white", nodesep=0.22, ranksep=0.30, pad=0.16, splines=polyline];
+ node [shape=box, style="rounded,filled", color="#CBD5E1", fillcolor="#EFF6FF", fontname="DejaVu Sans", fontsize=11, margin="0.14,0.10"];
+ edge [color="#64748B", arrowsize=0.65, fontname="DejaVu Sans", fontsize=10];
+ a [label="1. ML image digest -> CI scan, contract and load tests"];
+ b [label="2. GitOps deploy v2, 0% stable traffic; warm and smoke-test"];
+ c [label="3. Canary: 1% -> 5% -> 25% -> 50% -> 100%", fillcolor="#DCFCE7"];
+ d [label="4. Compare errors, p95 latency, capacity and model quality", fillcolor="#FEF3C7"];
+ e [label="PASS: promote v2; keep v1 warm", fillcolor="#D1FAE5"];
+ f [label="FAIL: Git route change to 100% v1", fillcolor="#FEE2E2"];
+ a -> b -> c -> d;
+ d -> e [label="pass"];
+ d -> f [label="fail"];
+ {rank=same; e; f;}
+}

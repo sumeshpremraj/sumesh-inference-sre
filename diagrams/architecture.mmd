@@ -1,0 +1,23 @@
+flowchart TB
+    Client[Clients / product APIs] --> Edge[HTTPS LB + WAF + auth / rate limits]
+    Edge --> Gateway[Gateway API controller / HTTPRoute]
+    Gateway -->|fraud: 95%| S1[fraud-v1 Service]
+    Gateway -->|fraud: 5%| S2[fraud-v2 Service]
+    Gateway -->|recommendation| S3[recommendation-v3 Service]
+    S1 --> D1[Deployment fraud-v1]
+    S2 --> D2[Deployment fraud-v2]
+    S3 --> D3[Deployment recommendation-v3]
+    K1[KEDA/HPA fraud-v1] -. scales .-> D1
+    K2[KEDA/HPA fraud-v2] -. scales .-> D2
+    K3[KEDA/HPA recommendation-v3] -. scales .-> D3
+    N[Node provisioning: CPU/GPU pools] -. capacity .-> D1
+    N -. capacity .-> D2
+    N -. capacity .-> D3
+    O[Prometheus / OTel / Grafana / alerts] -. measures .-> Gateway
+    O -. measures .-> D1
+    O -. measures .-> D2
+    O -. measures .-> D3
+    G[Git PR + Argo CD] -. desired state .-> Gateway
+    G -. desired state .-> D1
+    G -. desired state .-> D2
+    G -. desired state .-> D3

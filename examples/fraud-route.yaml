@@ -1,0 +1,42 @@
+# Requires a pre-existing Gateway named 'inference-gateway' with HTTPS listener.
+# Gateway controller must support the HTTPRoute URLRewrite Extended feature.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: fraud-route
+  namespace: inference
+spec:
+  parentRefs:
+    - name: inference-gateway
+  hostnames: ["api.example.com"]
+  rules:
+    # Default endpoint: progressively shift traffic without redeploying pods.
+    - matches:
+        - path: {type: Exact, value: /models/fraud/predict}
+          method: POST
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: /predict}
+      backendRefs:
+        - {name: fraud-v1-svc, port: 8080, weight: 95}
+        - {name: fraud-v2-svc, port: 8080, weight: 5}
+    # Pinned endpoints for testing and reproducibility.
+    - matches:
+        - path: {type: Exact, value: /models/fraud/versions/v1/predict}
+          method: POST
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: /predict}
+      backendRefs:
+        - {name: fraud-v1-svc, port: 8080, weight: 1}
+    - matches:
+        - path: {type: Exact, value: /models/fraud/versions/v2/predict}
+          method: POST
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: /predict}
+      backendRefs:
+        - {name: fraud-v2-svc, port: 8080, weight: 1}
