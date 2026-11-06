@@ -118,7 +118,7 @@ Official references used:
 - KEDA Prometheus scaler: https://keda.sh/docs/2.21/scalers/prometheus/
 - KEDA ScaledObject spec: https://keda.sh/docs/2.21/reference/scaledobject-spec/
 - Kubernetes topology spread: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
-- Argo CD auto-sync behavior: https://argo-cd.readthedocs.io/en/latest/user-guide/auto_sync/
+- Argo CD auto-sync behavior: https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/
 - OpenTelemetry HTTP metrics: https://opentelemetry.io/docs/specs/semconv/http/http-metrics/
 - Karpenter GPU scheduling: https://karpenter.sh/docs/concepts/scheduling/
 
